@@ -1,116 +1,126 @@
 //reference : https://returnzerooo.wordpress.com/2017/09/28/%E0%A6%86%E0%A6%B9%E0%A7%8B-%E0%A6%95%E0%A7%8B%E0%A6%B0%E0%A6%BE%E0%A6%B8%E0%A6%BF%E0%A6%95/
 
 /*
-  INPUT
-  5
-  aba
-  ba
-  ac
-  a
-  abc
+INPUT
+5
+aba
+ba
+ac
+a
+abc
 
-  ababacbabc
+ababacbabc
 
-  OUTPUT
+OUTPUT
 
-  aba found : 2 times
-  ba found : 3 times
-  ac found : 1 times
-  a found : 4 times
-  abc found : 1 times
+aba found : 2 times
+ba found : 3 times
+ac found : 1 times
+a found : 4 times
+abc found : 1 times
 */
 
 #include <bits/stdc++.h>
 using namespace std;
 
-#define pb push_back
-
-const int mx = 505 * 505;
-
-int tree[mx][30];
-int cnt[mx];
-int fail[mx];
-int ind=0;
-
-void insert(string s){
-  int N = (int)s.size();
-  int cur=0;
-  for(int i=0; i<N; i++){
-    int val = s[i]-'a';
-    if(tree[cur][val] == 0){
-      tree[cur][val] = ++ind;
+const int N = 6e5 + 9;
+int cnt[N];
+ 
+struct aho_corasick{
+  bool is_end[N];
+  int link[N]; // link to the longest proper suffix
+  int out_link[N]; // link to the longest proper suffix which is appered in patterns
+  int sz;
+  map<char,int>to[N],dp[N];
+ 
+  void clear(){
+    for(int i = 0; i<sz; i++){
+      is_end[i] = 0,link[i] = 0,to[i].clear(),dp[i].clear();
+      sz = 0;
+      is_end[0] = 1;
     }
-    cur = tree[cur][val];
   }
-}
-
-void Build_Aho_Corasick_Fail(){
-  queue<int>q;
-  for(int i=0; i<26; i++){
-    if(tree[0][i]) q.push(tree[0][i]);
+  aho_corasick(){
+    sz = N-2;
+    clear();
   }
-  while(!q.empty()){
-    int cur = q.front();
-    q.pop();
-    for(int i=0; i<26; i++){
-      if(tree[cur][i] == 0) continue;
-      q.push(tree[cur][i]);
-      int temp_cur = fail[cur];
-      while(temp_cur>0 && tree[temp_cur][i] ==0){
-        temp_cur = fail[temp_cur];
+ 
+  void add_word(string &s){
+    int u = 0;
+    for(char c : s){
+      if(!to[u].count(c)) to[u][c] = ++sz;
+      u = to[u][c];
+    }
+    is_end[u] = 1;
+  }
+ 
+  void push_links(){
+    queue<int>q;
+    int u,v,j;
+    char c;
+    q.push(0);
+    link[0] = -1;
+    while(!q.empty()){
+      u = q.front();
+      q.pop();
+      for(auto it : to[u]){
+        v = it.second;
+        c = it.first;
+        j = link[u];
+ 
+        while(j!=-1 && !to[j].count(c)) j = link[j];
+        if(j != -1) link[v] = to[j][c];
+        else link[v] = 0;
+        out_link[v] = (is_end[link[v]] ? link[v] : out_link[link[v]]);
+ 
+        q.push(v);
       }
-      fail[tree[cur][i]]=tree[temp_cur][i];
     }
   }
-}
+ 
+  // go to the state if we add the character ch
+  int go(int v,char ch){
+    if(!dp[v].count(ch)){
+      if(to[v].count(ch)) return dp[v][ch] = to[v][ch];
+      return dp[v][ch] = (v == 0 ? 0 : go(link[v],ch));
+    }
+    return dp[v][ch];
+  }
+}aho;
 
-void Search(string s){
-  int N = (int)s.size();
-  int cur=0;
-  for(int i=0; i<N; i++){
-    int val = s[i]-'a';
-    while(cur > 0 && tree[cur][val] == 0){
-      cur = fail[cur];
-    }
-    cur = tree[cur][val];
-    int temp_cur = cur;
-    while(temp_cur > 0){
-      cnt[temp_cur]++;
-      temp_cur = fail[temp_cur];
-    }
-  }
-}
 
-int find(string s){
-  int N = (int)s.size();
-  int cur=0;
-  for(int i=0; i<N; i++){
-    int val = s[i]-'a';
-    cur = tree[cur][val];
+void dfs(int u,char c){
+  cout << u << " " << c << " " << cnt[u] << endl;
+  for(auto it : aho.to[u]){
+    dfs(it.second,it.first);
   }
-  return cnt[cur];
 }
+ 
 
 void solve(){
-  ind=0;
-  int n;cin>>n;
-  vector<string>v(n+10);
-  for(int i=0; i<n; i++){
-    cin>>v[i];
-    insert(v[i]);
+  int n; cin >> n;
+  for(int i = 0; i<n; i++){
+    string s; cin >> s;
+    aho.add_word(s);
   }
+  aho.push_links();
 
-  string s;cin>>s;
+  string text; cin >> text;
 
-  Build_Aho_Corasick_Fail();
-  Search(s);
-
-  for(int i=0; i<n; i++){
-    cout<<v[i]<<" found : "<<find(v[i])<<" times"<<endl;
+  int cur = 0;
+  for(char ch : text){
+    cur = aho.go(cur,ch);
+    int temp = cur;
+    while(temp > 0){
+      cnt[temp]++;
+      temp = aho.out_link[temp];
+    }
   }
+  dfs(0,'.');
 }
 
-main(){
+
+int32_t main(){
   #ifndef ONLINE_JUDGE
   freopen("input.txt", "r", stdin);
   freopen("output.txt", "w", stdout);
