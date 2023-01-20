@@ -1,12 +1,14 @@
-/*
+```
+Input
 1
 4 4
 2 1
 1 4
 3 4
 2 3
-*/
+```
 
+```c++
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -94,3 +96,4 @@ main(){
         solve();
     }
 }
+```
