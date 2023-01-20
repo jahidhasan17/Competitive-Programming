@@ -28,6 +28,17 @@ void TopSort(int u, vector<vector<int>>&g, vector<int>&startTime, vector<int>&en
   endTime[u] = currentTime;
 }
 
+void TopSortStackBased(int u, vector<vector<int>>&g, stack<int>&st, vector<int>&visited, int &currentTime) {
+    currentTime++;
+    visited[u] = 1;
+
+    for(int v : g[u]) {
+        if(!visited[v]) {
+            TopSortStackBased(v, g, st, visited, currentTime);
+        }
+    }
+    st.push(u);
+}
 
 void solve() {
   int n, m; cin >> n >> m;
